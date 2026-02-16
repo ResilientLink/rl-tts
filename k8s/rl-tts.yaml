@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rl-tts
+  namespace: rl-edge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rl-tts
+  template:
+    metadata:
+      labels:
+        app: rl-tts
+    spec:
+      imagePullSecrets:
+      - name: dockerhub-secret
+      enableServiceLinks: false
+      containers:
+      - name: rl-tts
+        image: yeager1977/rl-tts:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+          requests:
+            nvidia.com/gpu: 1
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "GPU-91f8dded-a053-fcb2-febc-7bc2c0d5684e"
+        - name: TTS_HOME
+          value: "/app/models"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        volumeMounts:
+        - name: ai-models
+          mountPath: /app/models
+      volumes:
+      - name: ai-models
+        persistentVolumeClaim:
+          claimName: ai-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rl-tts
+  namespace: rl-edge
+spec:
+  selector:
+    app: rl-tts
+  ports:
+  - port: 8080
+    targetPort: 8080
+
